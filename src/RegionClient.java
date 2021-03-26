@@ -1535,6 +1535,7 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
                               (RecoverableException) decoded);
       return null;
     } else if (decoded instanceof UnknownScannerException) {
+      LOG.info("MissingScannerAvoided {}", rpc.attempt);
       return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
     } else if (decoded instanceof RecoverableException && 
         // RSSE could pop on a multi action in which case we want to pass it
