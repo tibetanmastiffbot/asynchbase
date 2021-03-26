@@ -1534,14 +1534,15 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
       hbase_client.handleNSRE(rpc, rpc.getRegion().name(),
                               (RecoverableException) decoded);
       return null;
+    } else if (decoded instanceof UnknownScannerException) {
+      return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
     } else if (decoded instanceof RecoverableException && 
         // RSSE could pop on a multi action in which case we want to pass it
         // on to the multi action callback handler.
         !(decoded instanceof RegionServerStoppedException && 
             rpc instanceof MultiAction)) {
       // retry a recoverable RPC that doesn't conform to the NSRE path
-      // only if we haven't attempted more than 15 times
-      if (hbase_client.cannotRetryRequest(rpc) || rpc.attempt >= 16) { // 33 seconds at max
+      if (hbase_client.cannotRetryRequest(rpc)) {
         return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
       }
       
@@ -1569,7 +1570,7 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         rpc.timeout_handle = null;
       }
       
-      hbase_client.newTimeout(new RetryTimer(), 1000 + (1 << rpc.attempt)); // 33 seconds at max
+      hbase_client.newTimeout(new RetryTimer(), rpc.getRetryDelay());
       return null;
     }
 
