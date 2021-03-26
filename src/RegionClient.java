@@ -1539,7 +1539,7 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         // on to the multi action callback handler.
         !(decoded instanceof RegionServerStoppedException && 
             rpc instanceof MultiAction)) {
-      // retry a recoverable RPC that doesn't conform to the NSRE path
+      // fast failure
       return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
     }
 
