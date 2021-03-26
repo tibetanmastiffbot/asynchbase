@@ -1540,8 +1540,8 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         !(decoded instanceof RegionServerStoppedException && 
             rpc instanceof MultiAction)) {
       // retry a recoverable RPC that doesn't conform to the NSRE path
-      // only if we haven't attempted more than 3 times
-      if (hbase_client.cannotRetryRequest(rpc) || rpc.attempt >= 4) {
+      // only if we haven't attempted more than 15 times
+      if (hbase_client.cannotRetryRequest(rpc) || rpc.attempt >= 16) { // 33 seconds at max
         return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
       }
       
@@ -1569,7 +1569,7 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         rpc.timeout_handle = null;
       }
       
-      hbase_client.newTimeout(new RetryTimer(), rpc.getRetryDelay());
+      hbase_client.newTimeout(new RetryTimer(), 1000 + (1 << rpc.attempt)); // 33 seconds at max
       return null;
     }
 
