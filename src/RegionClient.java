@@ -1534,9 +1534,6 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
       hbase_client.handleNSRE(rpc, rpc.getRegion().name(),
                               (RecoverableException) decoded);
       return null;
-    } else if (decoded instanceof UnknownScannerException) {
-      LOG.info("MissingScannerAvoided {}", rpc.attempt);
-      return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
     } else if (decoded instanceof RecoverableException && 
         // RSSE could pop on a multi action in which case we want to pass it
         // on to the multi action callback handler.
@@ -1545,6 +1542,15 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
       // retry a recoverable RPC that doesn't conform to the NSRE path
       if (hbase_client.cannotRetryRequest(rpc)) {
         return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
+      }
+
+      if (decoded instanceof UnknownScannerException) {
+        // mandatory yield
+        try {
+          Thread.sleep(2000L);
+        } catch (Exception e) {
+        }
+        rpc.attempt++; // further penalty, so it will fastly reach the limit
       }
       
       final class RetryTimer implements TimerTask {
