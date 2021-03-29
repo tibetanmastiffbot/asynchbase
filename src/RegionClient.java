@@ -1545,11 +1545,6 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
       }
 
       if (decoded instanceof UnknownScannerException) {
-        // mandatory yield
-        try {
-          Thread.sleep(2000L);
-        } catch (Exception e) {
-        }
         rpc.attempt++; // further penalty, so it will fastly reach the limit
       }
       
