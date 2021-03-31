@@ -1548,8 +1548,11 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
       }
 
-      if (decoded instanceof UnknownScannerException) {
-        rpc.attempt = Math.max(rpc.attempt + 1, client_retry_max_attempts); // further penalty, so it will fastly reach the limit
+      if (decoded instanceof UnknownScannerException) { // further penalty, so it will fastly reach the limit
+        rpc.attempt++;
+        byte max = (byte) (client_retry_max_attempts - 1); // conservatively avoid the issue of ++ becomes 0
+        if (max > rpc.attempt)
+          rpc.attempt = max;
       }
       
       final class RetryTimer implements TimerTask {
