@@ -262,9 +262,6 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
   /** Number of batchable RPCs allowed in a single batch before it's sent off */
   private int batch_size;
   
-  /** Maximum number of attempts for each RPC */
-  private final int client_retry_max_attempts;
-  
   /**
    * Constructor.
    * @param hbase_client The HBase client this instance belongs to.
@@ -278,7 +275,6 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
     pending_limit = hbase_client.getConfig().getInt(
         "hbase.region_client.pending_limit");
     batch_size = hbase_client.getConfig().getInt("hbase.rpcs.batch.size");
-    client_retry_max_attempts = hbase_client.getConfig().getInt("hbase.client.retries.number");
   }
 
   /**
@@ -1548,13 +1544,6 @@ final class RegionClient extends ReplayingDecoder<VoidEnum> {
         return HBaseClient.tooManyAttempts(rpc, (RecoverableException) decoded);
       }
 
-      if (decoded instanceof UnknownScannerException) { // further penalty, so it will fastly reach the limit
-        rpc.attempt++;
-        byte max = (byte) (client_retry_max_attempts - 1); // conservatively avoid the issue of ++ becomes 0
-        if (max > rpc.attempt)
-          rpc.attempt = max;
-      }
-      
       final class RetryTimer implements TimerTask {
         public void run(final Timeout timeout) {
           if (isAlive()) {
